@@ -1,0 +1,17 @@
+doctype xml
+include _mixins
+jobs(xmlns="http://www.demandware.com/xml/impex/jobs/2015-07-01")
+    if catalogs
+        each group in Object.keys(catalogs)
+            include job_catalogs
+            include job_skus
+    if priceBooks
+        each group in Object.keys(priceBooks)
+            include job_pricebooks
+    if promotions
+        each group in Object.keys(promotions)
+            include job_promotions
+    if inventoryLists
+        each group in Object.keys(inventoryLists)
+            include job_inventorylists
+            //-include job_skus

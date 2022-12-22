@@ -1,0 +1,21 @@
+job(job-id=`highstreet_${config.id}_export_pricebooks_${group}_job` priority="0")
+    //-description
+    //-parameters
+    +splitWrap
+        each priceBook, i in priceBooks[group]
+            +split(i, 3)
+                - let priceBookId = slugify(priceBook.id)
+                - let site = priceBook.sites[0]
+                flow
+                    context(site-id=`${site}`)/
+                    step(step-id=`highstreet_export_pricebook_${priceBookId}` type="custom.CSComponents.ExportPriceBooks" enforce-restart="false")
+                        description
+                        parameters
+                            parameter(name="TargetFolder") src/highstreet/#{config.id}
+                            parameter(name="Filename") pricebook_#{priceBookId}.xml
+                            parameter(name="PriceBooks") #{priceBook.id}
+
+    +jobFtpUpload(config, "pricebook_.*", "pricebooks")
+
+    //-rules/
+    triggers/

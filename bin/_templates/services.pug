@@ -1,0 +1,22 @@
+doctype xml
+services(xmlns="http://www.demandware.com/xml/impex/services/2014-09-26")
+    - let targetEnv = config.env == 'development' ? 'sandbox' : 'production'
+    - let ftpConfig = config.ftp[targetEnv]
+    service-credential(service-credential-id=`highstreet_${config.id}_ftp`)
+        url #{ftpConfig.url}
+        user-id #{ftpConfig.user}
+        password(encrypted="false") #{ftpConfig.password}
+
+    service-profile(service-profile-id=`highstreet_${config.id}_ftp`)
+        rate-limit-enabled false
+        cb-enabled false
+
+    service(service-id=`highstreet_${config.id}_ftp_service`)
+        service-type #{ftpConfig.url.split(':')['0'].toUpperCase()}
+        enabled true
+        log-prefix highstreet
+        comm-log-enabled true
+        force-prd-enabled false
+        mock-mode-enabled false
+        profile-id highstreet_#{config.id}_ftp
+        credential-id highstreet_#{config.id}_ftp

@@ -1,0 +1,39 @@
+{
+  "name": "link_highstreet",
+  "version": "20.1.0",
+  "description": "Highstreet B2C Commerce plugin",
+  "main": "bin/build.js",
+  "bin": {
+    "cchighstreet": "bin/build.js"
+  },
+  "scripts": {
+    "configure": "node bin/build.js",
+    "documentation": "md-to-pdf ./documentation/highstreet_cartridge.md",
+    "deps:job_components": "git clone --depth=1 https://github.com/SalesforceCommerceCloud/job-components.git tmp && cp -R tmp/cartridges/bc_job_components cartridges && rm -rf tmp",
+    "lint": "npm run lint:js",
+    "lint:js": "sgmf-scripts --lint js",
+    "upload": "sgmf-scripts --uploadCartridge int_highstreet && sgmf-scripts --uploadCartridge bc_job_components"
+  },
+  "repository": {
+    "type": "git",
+    "url": "ssh://git@stash.openmindonline.it:7999/hig/link_highstreet.git"
+  },
+  "author": {
+    "name": "openmind",
+    "url": "https://www.openmindonline.it",
+    "email": "info@openmindonline.it"
+  },
+  "dependencies": {
+    "pug": "^2.0.3",
+    "sgmf-scripts": "^2.4.1",
+    "slugify": "^1.3.4",
+    "yargs": "^12.0.5"
+  },
+  "devDependencies": {
+    "eslint": "^3.19.0",
+    "eslint-config-airbnb-base": "^5.0.3",
+    "eslint-plugin-import": "^1.16.0",
+    "eslint-plugin-sitegenesis": "~1.0.0",
+    "md-to-pdf": "^3.0.0"
+  }
+}

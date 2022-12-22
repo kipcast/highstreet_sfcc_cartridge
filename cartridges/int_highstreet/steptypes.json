@@ -1,0 +1,69 @@
+{
+  "step-types": {
+    "chunk-script-module-step": [{
+      "@type-id": "custom.HighstreetProductsFeed",
+      "description": "Products Feed",
+      "module": "int_highstreet/cartridge/scripts/productsFeed.js",
+      "before-step-function": "beforeStep",
+      "total-count-function": "getTotalCount",
+      "before-chunk-function": "beforeChunk",
+      "read-function": "read",
+      "process-function": "process",
+      "write-function": "write",
+      "after-chunk-function": "afterChunk",
+      "after-step-function": "afterStep",
+      "chunk-size": 10,
+      "transactional": "false",
+      "parameters": {
+        "parameter": [{
+          "@name": "TargetFolder",
+          "@type": "string",
+          "@required": "true",
+          "@trim": "true",
+          "description": "Target folder in IMPEX space"
+        }, {
+          "@name": "Filename",
+          "@type": "string",
+          "@required": "true",
+          "@trim": "true",
+          "description": "File name in IMPEX space"
+        }, {
+          "@name": "CatalogID",
+          "@type": "string",
+          "@required": "true",
+          "@trim": "true",
+          "description": "ID of the master catalog to export"
+        }, {
+          "@name": "ImageViewType",
+          "@type": "string",
+          "@required": "true",
+          "@trim": "true",
+          "description": "View type for the product image to export"
+        }, {
+          "@name": "SiteLocalesConfiguration",
+          "@type": "string",
+          "@required": "true",
+          "@trim": "true",
+          "description": "Configuration site/locales Json-text"
+        }, {
+          "@name": "ProcessProductScript",
+          "@type": "string",
+          "@required": "false",
+          "@trim": "true",
+          "description": "Path to script to write product information"
+        }]
+      },
+      "status-codes": {
+        "status": [{
+            "@code": "ERROR",
+            "description": "Used when the step failed with an error."
+          },
+          {
+            "@code": "OK",
+            "description": "Used when the step finished successfully."
+          }
+        ]
+      }
+    }]
+  }
+}

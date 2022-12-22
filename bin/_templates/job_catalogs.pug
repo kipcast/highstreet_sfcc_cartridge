@@ -1,0 +1,28 @@
+job(job-id=`highstreet_${config.id}_export_catalogs_${group}_job` priority="0")
+    //-description
+    //-parameters
+    +splitWrap
+        each catalog, i in catalogs[group]
+            +split(i, 3)
+                - let catalogId = slugify(catalog.id)
+                - let master = catalog.master
+                - let site = catalog.sites[0].site
+                flow
+                    context(site-id=`${site}`)/
+                    step(step-id=`highstreet_export_catalogs_${catalogId}` type="custom.CSComponents.ExportCatalog" enforce-restart="false")
+                        description
+                        parameters
+                            parameter(name="TargetFolder") src/highstreet/#{config.id}
+                            parameter(name="Filename") catalog_#{catalogId}.xml
+                            parameter(name="Catalog") #{catalog.id}
+                            parameter(name="ExportCategories") #{!master}
+                            parameter(name="ExportProducts") #{master}
+                            parameter(name="ExportCategoryAssignements") #{!master}
+                            parameter(name="ExportProductOptions") false
+                            parameter(name="ExportRecommendations") false
+                            parameter(name="ExportVariationAttributes") true
+
+    +jobFtpUpload(config, "catalog_.*", "catalogs")
+
+    //-rules/
+    triggers/

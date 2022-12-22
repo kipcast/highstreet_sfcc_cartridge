@@ -1,0 +1,31 @@
+//- renders ftp upload job step
+mixin jobFtpUpload(config, filePattern, type)
+    if 'ftp' in config
+        - let targetEnv = config.env == 'development' ? 'sandbox' : 'production'
+        flow
+            context(site-id="Sites")/
+            step(step-id=`highstreet_upload_${type}` type="custom.CSComponents.FtpUpload" enforce-restart="false")
+                //-description
+                parameters
+                    parameter(name="ServiceID") highstreet_#{config.id}_ftp_service
+                    parameter(name="FilePattern") #{filePattern}
+                    parameter(name="SourceFolder") src/highstreet/#{config.id}
+                    parameter(name="TargetFolder") #{config.ftp[targetEnv].targetFolder || config.clientId}
+
+//- mixins to help creating parallel job flows
+- let splitOpen = false
+mixin splitWrap
+    - splitOpen = false
+    block
+    if splitOpen
+        </split>
+
+mixin split(i, count=3)
+    if i%count == 0
+        <split sequential="false">
+        - splitOpen = true
+    block
+    if i%count == count - 1
+        </split>
+        - splitOpen = false
+

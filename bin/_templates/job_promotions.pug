@@ -1,0 +1,19 @@
+job(job-id=`highstreet_${config.id}_export_promotions_${group}_job` priority="0")
+    //-description
+    //-parameters
+    +splitWrap
+        each site, i in promotions[group]
+            +split(i, 3)
+                - let siteId = slugify(site)
+                flow
+                    context(site-id=`${site}`)
+                    step(step-id=`highstreet_export_promotions_${siteId}` type="custom.CSComponents.ExportPromotions" enforce-restart="false")
+                        description
+                        parameters
+                            parameter(name="TargetFolder") src/highstreet/#{config.id}
+                            parameter(name="Filename") promotions_#{site}.xml
+
+    +jobFtpUpload(config, "promotions.*", "promotions")
+
+    //-rules/
+    triggers/

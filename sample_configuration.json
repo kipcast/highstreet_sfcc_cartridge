@@ -1,0 +1,56 @@
+{
+    "id": "Acme",
+    "feeds": [{
+            "site": "ACME_US",
+            "locales": ["en_US", "es_US", "en_CA", "fr_CA"],
+            "catalogMaster": "acme-master",
+            "catalogStorefront": "acme-us",
+            "priceBook": "acme_us_usd_full",
+            "priceBookSale": "acme_us_usd_sale",
+            "exportPromotions": false,
+            "inventoryList": "acme_us",
+            "imageViewType": "large",
+            "publishGroup": "acme"
+        }, {
+            "site": "ACME_EU",
+            "locales": ["en_ES", "en_FR", "en_IT"],
+            "catalogMaster": "acme-master",
+            "catalogStorefront": "acme-eu",
+            "priceBook": "acme_eu_eur_full",
+            "priceBookSale": "acme_eu_eur_sale",
+            "exportPromotions": false,
+            "inventoryList": "acme_eu",
+            "imageViewType": "large",
+            "publishGroup": "acme_eu"
+        }, {
+            "site": "EMCA_US",
+            "locales": ["en_US", "es_US"],
+            "catalogMaster": "acme-master",
+            "catalogStorefront": "emca-us",
+            "priceBook": "emca_us_usd_full",
+            "exportPromotions": true,
+            "inventoryList": "emca_us",
+            "imageViewType": "pdp1",
+            "publishGroup": "emca"
+        }
+    ],
+    "ftp": {
+        "sandbox": {
+            "url": "ftp://sandbox.highstreet.com",
+            "user": "1234567890",
+            "password": "astrongpassword",
+            "targetFolder": "in"
+        },
+        "production": {
+            "url": "ftp://ftp.highstreet.com",
+            "user": "1234567890",
+            "password": "astrongpassword",
+            "targetFolder": "in"
+        }
+    },
+    "exportFromEnv": {
+        "production": ["inventoryLists"],
+        "staging": ["catalogs", "priceBooks", "promotions"],
+        "development": ["inventoryLists", "catalogs", "priceBooks", "promotions"]
+    }
+}

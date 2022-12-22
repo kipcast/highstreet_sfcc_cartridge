@@ -1,0 +1,21 @@
+job(job-id=`highstreet_${config.id}_export_inventorylists_${group}_job` priority="0")
+    //-description
+    //-parameters
+    +splitWrap
+        each inventoryList, i in inventoryLists[group]
+            +split(i, 3)
+                - let inventoryListId = slugify(inventoryList.id)
+                - let site = inventoryList.sites[0]
+                flow
+                    context(site-id=`${site}`)/
+                    step(step-id=`highstreet_export_inventorylist_${inventoryListId}` type="custom.CSComponents.ExportInventoryLists" enforce-restart="false")
+                        description
+                        parameters
+                            parameter(name="TargetFolder") src/highstreet/#{config.id}
+                            parameter(name="Filename") inventorylist_#{inventoryListId}.xml
+                            parameter(name="InventoryLists") #{inventoryList.id}
+
+    +jobFtpUpload(config, "inventorylist_.*", "inventorylists")
+
+    //-rules/
+    triggers/

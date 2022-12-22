@@ -1,0 +1,26 @@
+
+job(job-id=`highstreet_${config.id}_highStreet_sku_${group}_job` priority="0")
+    //-description
+    //-parameters
+    +splitWrap
+        each catalog, i in catalogs[group]
+            if !catalog.master
+                +split(i, 3)
+                    <!-- #{JSON.stringify(catalog.sites)} -->
+                    each site in catalog.sites
+                        flow
+                            context(site-id=`${site.site}`)/
+                            step(step-id=`highstreet_highStreet_sku_${site.site}` type="custom.HighstreetProductsFeed" enforce-restart="false")
+                                description
+                                parameters
+                                    parameter(name="TargetFolder") src/highstreet/#{config.id}
+                                    parameter(name="Filename") sku_#{site.site}.xml
+                                    parameter(name="CatalogID") #{catalog.id}
+                                    parameter(name="ImageViewType") #{site.imageViewType}
+                                    parameter(name="SiteLocalesConfiguration") #{site.locales.join(',')}
+                                    parameter(name="ProcessProductScript")
+
+    +jobFtpUpload(config, "sku_.*", "skus")
+
+    //-rules/
+    triggers/
