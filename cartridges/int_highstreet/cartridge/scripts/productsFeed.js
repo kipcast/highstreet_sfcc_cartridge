@@ -14,6 +14,7 @@ var URLAction = require('dw/web/URLAction');
 var URLParameter = require('dw/web/URLParameter');
 var URLUtils = require('dw/web/URLUtils');
 var XMLIndentingStreamWriter = require('dw/io/XMLIndentingStreamWriter');
+var ProductMgr = require('dw/catalog/ProductMgr');
 
 var hits;
 var fileWriter;
@@ -78,22 +79,28 @@ exports.beforeStep = function (parameters, stepExecution) {
     }
 
     var catalog = CatalogMgr.getCatalog(parameters.CatalogID);
-    var productSearchModel = new ProductSearchModel();
-    productSearchModel.setRecursiveCategorySearch(true);
-    productSearchModel.setOrderableProductsOnly(false);
-    productSearchModel.setCategoryID(catalog.root.ID);
-    if (processProductScript && processProductScript.prepareSearch) {
-        processProductScript.prepareSearch(
-            xmlStreamWriter,
-            productSearchModel,
-            parameters,
-            stepExecution
-        );
-    }
-    productSearchModel.search();
-    totalCount = productSearchModel.getCount();
 
-    hits = productSearchModel.getProductSearchHits();
+    if (parameters.useProductQuery) {
+        hits = ProductMgr.queryProductsInCatalog(catalog);
+        totalCount = hits.getCount();
+    } else {
+        var productSearchModel = new ProductSearchModel();
+        productSearchModel.setRecursiveCategorySearch(true);
+        productSearchModel.setOrderableProductsOnly(false);
+        productSearchModel.setCategoryID(catalog.root.ID);
+        if (processProductScript && processProductScript.prepareSearch) {
+            processProductScript.prepareSearch(
+                xmlStreamWriter,
+                productSearchModel,
+                parameters,
+                stepExecution
+            );
+        }
+        productSearchModel.search();
+        totalCount = productSearchModel.getCount();
+
+        hits = productSearchModel.getProductSearchHits();
+    }
     locales = (parameters.SiteLocalesConfiguration || 'default')
         .split(',')
         .map(function (locale) {
@@ -162,6 +169,8 @@ exports.process = function (hit, parameters, stepExecution) {
  * @param {Object} stepExecution step execution context
  */
 exports.write = function (hitsList, parameters, stepExecution) {
+    var isProductSearch = !parameters.useProductQuery;
+
     if (processProductScript && processProductScript.write) {
         processProductScript.write(
             xmlStreamWriter,
@@ -179,91 +188,81 @@ exports.write = function (hitsList, parameters, stepExecution) {
                     stepExecution
                 );
             } else {
-                var products = hit.product.isVariant()
-                    ? [hit.product]
-                    : hit.representedProducts.toArray();
+                if (isProductSearch) {
+                    var products = hit.product.isVariant() ? [hit.product] :
+                        hit.representedProducts.toArray();
+                } else {
+                    var products = hit.isMaster() ? hit.variants.toArray() :
+                        hit.isVariationGroup() ? [] : [hit];
+                }
                 products.forEach(function (product) {
-                    log.info('Processing product {0}', product.ID);
-                    if (processProductScript && processProductScript.writeProduct) {
-                        processProductScript.writeProduct(
-                            xmlStreamWriter,
-                            product,
-                            parameters,
-                            stepExecution
-                        );
-                    } else {
-                        xmlStreamWriter.writeStartElement('product');
-                        xmlStreamWriter.writeAttribute('id', product.ID);
+                    if (isProductSearch || (product.searchable && product.online && hasCategory(product))) {
+                        log.info('Processing product {0}', product.ID);
+                        if (processProductScript && processProductScript.writeProduct) {
+                            processProductScript.writeProduct(
+                                xmlStreamWriter,
+                                product,
+                                parameters,
+                                stepExecution
+                            );
+                        } else {
+                            xmlStreamWriter.writeStartElement('product');
+                            xmlStreamWriter.writeAttribute('id', product.ID);
 
-                        xmlStreamWriter.writeStartElement('urls');
-                        locales.forEach(function (locale) {
-                            if (
-                                processProductScript &&
-                                processProductScript.writeProductUrl
-                            ) {
-                                processProductScript.writeProductUrl(
-                                    xmlStreamWriter,
-                                    product,
-                                    locale,
-                                    parameters,
-                                    stepExecution
-                                );
-                            } else {
-                                xmlStreamWriter.writeStartElement('url');
-                                xmlStreamWriter.writeAttribute('locale', locale);
-                                var productUrl;
+                            xmlStreamWriter.writeStartElement('urls');
+                            locales.forEach(function (locale) {
                                 if (
                                     processProductScript &&
-                                    processProductScript.getProductUrl()
+                                    processProductScript.writeProductUrl
                                 ) {
-                                    productUrl = processProductScript.getProductUrl(
+                                    processProductScript.writeProductUrl(
+                                        xmlStreamWriter,
                                         product,
                                         locale,
                                         parameters,
                                         stepExecution
                                     );
                                 } else {
-                                    productUrl = URLUtils.abs(
-                                        new URLAction('Product-Show', site.ID, locale),
-                                        new URLParameter('pid', product.ID)
-                                    );
-                                }
-                                xmlStreamWriter.writeCharacters(productUrl);
-                                xmlStreamWriter.writeEndElement(); // url
-                            }
-                        });
-                        xmlStreamWriter.writeEndElement(); // urls
-
-                        xmlStreamWriter.writeStartElement('images');
-                        xmlStreamWriter.writeAttribute(
-                            'view-type',
-                            parameters.ImageViewType
-                        );
-                        product
-                            .getImages(parameters.ImageViewType)
-                            .toArray()
-                            .forEach(function (image, index) {
-                                if (
-                                    processProductScript &&
-                                    processProductScript.writeProductImage
-                                ) {
-                                    processProductScript.writeProductImage(
-                                        xmlStreamWriter,
-                                        product,
-                                        image,
-                                        index,
-                                        parameters,
-                                        stepExecution
-                                    );
-                                } else {
-                                    xmlStreamWriter.writeStartElement('image');
-                                    xmlStreamWriter.writeAttribute('index', index);
-                                    var imageUrl;
+                                    xmlStreamWriter.writeStartElement('url');
+                                    xmlStreamWriter.writeAttribute('locale', locale);
+                                    var productUrl;
                                     if (
                                         processProductScript &&
-                                        processProductScript.getProductImageUrl()
+                                        processProductScript.getProductUrl()
                                     ) {
-                                        imageUrl = processProductScript.getProductImageUrl(
+                                        productUrl = processProductScript.getProductUrl(
+                                            product,
+                                            locale,
+                                            parameters,
+                                            stepExecution
+                                        );
+                                    } else {
+                                        productUrl = URLUtils.abs(
+                                            new URLAction('Product-Show', site.ID, locale),
+                                            new URLParameter('pid', product.ID)
+                                        );
+                                    }
+                                    xmlStreamWriter.writeCharacters(productUrl);
+                                    xmlStreamWriter.writeEndElement(); // url
+                                }
+                            });
+                            xmlStreamWriter.writeEndElement(); // urls
+
+                            xmlStreamWriter.writeStartElement('images');
+                            xmlStreamWriter.writeAttribute(
+                                'view-type',
+                                parameters.ImageViewType
+                            );
+                            product
+                                .getImages(parameters.ImageViewType)
+                                .toArray()
+                                .forEach(function (image, index) {
+                                    if (
+                                        processProductScript &&
+                                        processProductScript.writeProductImage
+                                    ) {
+                                        processProductScript.writeProductImage(
+                                            xmlStreamWriter,
                                             product,
                                             image,
                                             index,
@@ -271,15 +270,31 @@ exports.write = function (hitsList, parameters, stepExecution) {
                                             stepExecution
                                         );
                                     } else {
-                                        imageUrl = image.absURL.toString();
+                                        xmlStreamWriter.writeStartElement('image');
+                                        xmlStreamWriter.writeAttribute('index', index);
+                                        var imageUrl;
+                                        if (
+                                            processProductScript &&
+                                            processProductScript.getProductImageUrl()
+                                        ) {
+                                            imageUrl = processProductScript.getProductImageUrl(
+                                                product,
+                                                image,
+                                                index,
+                                                parameters,
+                                                stepExecution
+                                            );
+                                        } else {
+                                            imageUrl = image.absURL.toString();
+                                        }
+                                        xmlStreamWriter.writeCharacters(imageUrl);
+                                        xmlStreamWriter.writeEndElement(); // image
                                     }
-                                    xmlStreamWriter.writeCharacters(imageUrl);
-                                    xmlStreamWriter.writeEndElement(); // image
-                                }
-                            });
-                        xmlStreamWriter.writeEndElement(); // images
+                                });
+                            xmlStreamWriter.writeEndElement(); // images
 
-                        xmlStreamWriter.writeEndElement(); // product
+                            xmlStreamWriter.writeEndElement(); // product
+                        }
                     }
                 });
             }
@@ -287,6 +302,18 @@ exports.write = function (hitsList, parameters, stepExecution) {
     }
 };
 
+
+function hasCategory(product) {
+    var hasCategory = product.categories.length > 0;
+
+    if (product.isVariant()) {
+        hasCategory = product.categories.length > 0 ||
+            product.masterProduct.categories.length > 0 ?
+            true : false;
+    }
+
+    return hasCategory;
+}
 /**
  * Executed at the end of the step:
  * - close the xml file

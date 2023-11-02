@@ -51,6 +51,11 @@
           "@required": "false",
           "@trim": "true",
           "description": "Path to script to write product information"
+        }, {
+          "@name": "useProductQuery",
+          "@type": "boolean",
+          "@required": "false",
+          "description": "Check it, if you want to use query product function available in ProductMgr to search products, otherwise, search will be performed using ProductSearchModel"
         }]
       },
       "status-codes": {
