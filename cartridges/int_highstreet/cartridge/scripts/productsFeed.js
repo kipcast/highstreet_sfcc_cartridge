@@ -192,11 +192,17 @@ exports.write = function (hitsList, parameters, stepExecution) {
                     var products = hit.product.isVariant() ? [hit.product] :
                         hit.representedProducts.toArray();
                 } else {
-                    var products = hit.isMaster() ? hit.variants.toArray() :
-                        hit.isVariationGroup() ? [] : [hit];
+                    productValid = (hit.searchable && hit.online && hasCategory(hit));
+
+                    if (productValid) {
+                        var products = hit.isMaster() ? hit.variants.toArray() :
+                            hit.isVariationGroup() ? [] : [hit];
+                    } else {
+                        products = [];
+                    }
                 }
                 products.forEach(function (product) {
-                    if (isProductSearch || (product.searchable && product.online && hasCategory(product))) {
+                    if (isProductSearch || product.online) {
                         log.info('Processing product {0}', product.ID);
                         if (processProductScript && processProductScript.writeProduct) {
                             processProductScript.writeProduct(
@@ -305,14 +311,19 @@ exports.write = function (hitsList, parameters, stepExecution) {
 
 function hasCategory(product) {
     var hasCategory = product.categories.length > 0;
+    var categories = product.categories;
 
-    if (product.isVariant()) {
-        hasCategory = product.categories.length > 0 ||
-            product.masterProduct.categories.length > 0 ?
-            true : false;
+    var oneCategoryOnline = false;
+    if (hasCategory) {
+        for (var i in categories) {
+            if (categories[i].online) {
+                oneCategoryOnline = true;
+                break;
+            }
+        }
     }
 
-    return hasCategory;
+    return (hasCategory && oneCategoryOnline);
 }
 /**
  * Executed at the end of the step:
